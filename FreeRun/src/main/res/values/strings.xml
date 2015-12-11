@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="app_name">Free Run</string>
+    
+    <string name="kws_caption">Say \"free run please\".</string>
+    <string name="menu_caption">Say \"start\", \"stop\", \n \"lap\" or \"results\".</string>
+    <string name="stop_caption">Final time: </string>
+</resources>
