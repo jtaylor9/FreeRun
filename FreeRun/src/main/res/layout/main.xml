@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="#94BFBF"
+    android:background="#008fc2"
     android:padding="16dp"
     android:orientation="vertical"
-    android:weightSum="1">
+    android:weightSum="1" >
 
     <TextView
         android:id="@+id/caption_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
+        android:layout_centerHorizontal="true"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:typeface="sans" />
 
@@ -20,16 +20,18 @@
         android:layout_height="35dp"
         android:text=""
         android:id="@+id/receivedText"
-        android:gravity="fill_vertical"
-        android:layout_gravity="center_horizontal" />
+        android:gravity="center"
+        android:layout_below="@id/caption_text"
+        android:layout_centerHorizontal="true"/>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="46dp"
         android:id="@+id/finalTime"
-        android:layout_gravity="center_horizontal"
-        android:textColor="#ffffff"
-        android:textSize="20sp" />
+        android:gravity="center"
+        android:textSize="20sp"
+        android:layout_below="@+id/textDistance"
+        android:layout_centerHorizontal="true"/>
 
     <Chronometer
         android:layout_width="265dp"
@@ -37,16 +39,27 @@
         android:id="@+id/chronometer"
         android:textSize="60sp"
         android:gravity="center"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="80dp" />
+        android:text="00:00"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"/>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/laptext"
-        android:layout_gravity="center_horizontal"
-        android:layout_weight="0.26"
+        android:gravity="center"
         android:textSize="22sp"
-        android:textStyle="bold"/>
+        android:textStyle="bold"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"/>
 
-</LinearLayout>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Distance"
+        android:id="@+id/textDistance"
+        android:layout_below="@+id/chronometer"
+        android:layout_centerHorizontal="true"/>
+
+</RelativeLayout>

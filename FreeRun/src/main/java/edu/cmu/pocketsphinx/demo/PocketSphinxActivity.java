@@ -50,9 +50,13 @@ public class PocketSphinxActivity extends Activity implements
     ArrayList<String> lapTimes = new ArrayList<>();
     int lapCounter = 1;
     int index = 0;
+    float finalDistance;
     long lapTime;
     long  timeElapsed;
     String finalTime;
+    TextView textDistance;
+
+    GPSTracker gps;
 
     @Override
     public void onCreate(Bundle state) {
@@ -65,6 +69,13 @@ public class PocketSphinxActivity extends Activity implements
         setContentView(R.layout.main);
         ((TextView) findViewById(R.id.caption_text))
                 .setText("Preparing the recognizer");
+        textDistance = (TextView) findViewById(R.id.textDistance);
+
+        gps = new GPSTracker(PocketSphinxActivity.this);
+        if(!gps.canGetLocation()) {      //Checking if location is on
+            gps.showSettingsAlert();
+            gps.getLocation();
+        }
 
         //Instantiate chronometer
         chron = (Chronometer) findViewById(R.id.chronometer);
@@ -79,11 +90,11 @@ public class PocketSphinxActivity extends Activity implements
                 hh = h < 10 ? "0" + h : h + "";
                 mm = m < 10 ? "0" + m : m + "";
                 ss = s < 10 ? "0" + s : s + "";
-                //chron.setText(hh+":"+mm+":"+ss);
+
+                float miles = gps.getDistance()/(float)1609.34;  //Convert from meters to miles
+                textDistance.setText(String.format("%.2f miles", miles));  //Update text
             }
         });
-        //chron.setText(hh+":"+mm+":"+ss);
-       // chron.setText("00:00:00");
 
         // Recognizer initialization is a time-consuming and it involves IO,
         // so we execute it in async task
@@ -138,38 +149,26 @@ public class PocketSphinxActivity extends Activity implements
         }
         else if (text.equals(START_SEARCH)) {
             ((TextView)findViewById(R.id.receivedText)).setText("Got Start");
-            lapTimes.clear();                                             //Reset the recorded laps
-            ((TextView) findViewById(R.id.laptext)).setText("");
-
-            chron.setBase(SystemClock.elapsedRealtime());
-            chron.start();
+            recognizer.stop();
         }
 
 
         else if (text.equals(STOP_SEARCH)) {
-
             ((TextView) findViewById(R.id.receivedText)).setText("Got Stop");
-            chron.stop();
-
-            timeElapsed = SystemClock.elapsedRealtime() - chron.getBase();
-            int hours = (int) (timeElapsed / 3600000);
-            int minutes = (int) (timeElapsed - hours * 3600000) / 60000;
-            int seconds = (int) (timeElapsed - hours * 3600000 - minutes * 60000) / 1000;
-            finalTime = "Total Time: [" + hours + " hrs:" + minutes + " mins:" + seconds + " secs]";
-            chron.setText("");
-            lapCounter = 1;
-            index = 0;
-            //lapTimes.clear();
+            recognizer.stop();
 
         }
 
         else if(text.equals(LAP_SEARCH)) {
-
             ((TextView) findViewById(R.id.receivedText)).setText("Got Lap");
+            recognizer.stop();
 
         }
 
-        else if(text.equals(RESULTS_SEARCH));
+        else if(text.equals(RESULTS_SEARCH)){
+            ((TextView) findViewById(R.id.receivedText)).setText("Got Results");
+            recognizer.stop();
+        }
 
         else
             ((TextView) findViewById(R.id.receivedText)).setText("Not recognized");
@@ -184,15 +183,45 @@ public class PocketSphinxActivity extends Activity implements
         if (hypothesis != null) {
             String text = hypothesis.getHypstr();
             makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
+
+            if (text.equals(START_SEARCH)) {
+                lapTimes.clear();                                             //Reset the recorded laps
+                ((TextView) findViewById(R.id.laptext)).setText("");
+
+                chron.setBase(SystemClock.elapsedRealtime());
+                chron.start();
+                gps.resetDistance();
+
+                switchSearch(KWS_SEARCH);
+            }
+
+            if (text.equals(STOP_SEARCH)) {
+                chron.stop();
+
+                timeElapsed = SystemClock.elapsedRealtime() - chron.getBase();
+                int hours = (int) (timeElapsed / 3600000);
+                int minutes = (int) (timeElapsed - hours * 3600000) / 60000;
+                int seconds = (int) (timeElapsed - hours * 3600000 - minutes * 60000) / 1000;
+                finalTime = "Total Time: [" + hours + " hrs:" + minutes + " mins:" + seconds + " secs]";
+                finalDistance = gps.getDistance();
+                chron.setText("");
+                lapCounter = 1;
+                index = 0;
+
+                switchSearch(KWS_SEARCH);
+            }
+
             if (text.equals(LAP_SEARCH)) {
                 lapTime = SystemClock.elapsedRealtime() - chron.getBase();
                 int hours = (int) (lapTime / 3600000);
                 int minutes = (int) (lapTime - hours * 3600000) / 60000;
                 int seconds = (int) (lapTime - hours * 3600000 - minutes * 60000) / 1000;
-                lapTimes.add("Lap " + lapCounter + ": " +  + hours + " hrs:" + minutes + " mins:" + seconds + " secs]");
+                lapTimes.add("[Lap " + lapCounter + ": " +  + hours + " hrs:" + minutes + " mins:" + seconds + " secs]");
                 lapCounter++;
                 ((TextView) findViewById(R.id.laptext)).setText(lapTimes.get(index));
                 index++;
+
+                switchSearch(KWS_SEARCH);
             }
 
             else if (text.equals(RESULTS_SEARCH)) {
@@ -206,6 +235,9 @@ public class PocketSphinxActivity extends Activity implements
 
                 ((TextView) findViewById(R.id.laptext)).setText(resultString);
                 ((TextView) findViewById(R.id.finalTime)).setText(finalTime);
+                ((TextView) findViewById(R.id.textDistance)).setText(String.format("%.2f miles", finalDistance));
+
+                switchSearch(KWS_SEARCH);
 
             }
         }
@@ -228,11 +260,11 @@ public class PocketSphinxActivity extends Activity implements
     private void switchSearch(String searchName) {
         recognizer.stop();
         
-        // If we are not spotting, start listening with timeout (10000 ms or 10 seconds).
+        // If we are not spotting, start listening with timeout (1 seconds).
         if (searchName.equals(KWS_SEARCH))
             recognizer.startListening(searchName);
         else
-            recognizer.startListening(searchName, 5000);
+            recognizer.startListening(searchName, 1000);
 
         String caption = getResources().getString(captions.get(searchName));
         ((TextView) findViewById(R.id.caption_text)).setText(caption);
@@ -250,7 +282,7 @@ public class PocketSphinxActivity extends Activity implements
                 //.setRawLogDir(assetsDir)
                 
                 // Threshold to tune for keyphrase to balance between false alarms and misses
-                .setKeywordThreshold(1e-40f)
+                .setKeywordThreshold(1e-30f)
                 
                 // Use context-independent phonetic search, context-dependent is too slow for mobile
                 .setBoolean("-allphone_ci", true)
