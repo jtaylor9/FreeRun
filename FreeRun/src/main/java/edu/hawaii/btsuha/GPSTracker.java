@@ -1,4 +1,4 @@
-package edu.cmu.pocketsphinx.demo;
+package edu.hawaii.btsuha;
 
 import android.app.AlertDialog;
 import android.app.Service;

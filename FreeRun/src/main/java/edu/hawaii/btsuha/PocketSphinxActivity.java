@@ -1,6 +1,6 @@
 
 
-package edu.cmu.pocketsphinx.demo;
+package edu.hawaii.btsuha;
 
 import static android.widget.Toast.makeText;
 import static edu.cmu.pocketsphinx.SpeechRecognizerSetup.defaultSetup;
@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -21,6 +20,9 @@ import edu.cmu.pocketsphinx.Assets;
 import edu.cmu.pocketsphinx.Hypothesis;
 import edu.cmu.pocketsphinx.RecognitionListener;
 import edu.cmu.pocketsphinx.SpeechRecognizer;
+import hawaii.edu.btsuha.R;
+
+
 import android.widget.Chronometer;
 import android.widget.Chronometer.OnChronometerTickListener;
 
@@ -31,7 +33,6 @@ public class PocketSphinxActivity extends Activity implements
     private static final String KWS_SEARCH = "wakeup";
     private static final String START_SEARCH = "start";
     private static final String STOP_SEARCH = "stop";
-    private static final String RESET_SEARCH = "reset";
     private static final String MENU_SEARCH = "menu";
     private static final String LAP_SEARCH = "lap";
     private static final String RESULTS_SEARCH = "results";
@@ -191,6 +192,7 @@ public class PocketSphinxActivity extends Activity implements
                 chron.setBase(SystemClock.elapsedRealtime());
                 chron.start();
                 gps.resetDistance();
+                gps.getLocation();
 
                 switchSearch(KWS_SEARCH);
             }
@@ -207,6 +209,8 @@ public class PocketSphinxActivity extends Activity implements
                 chron.setText("");
                 lapCounter = 1;
                 index = 0;
+
+                gps.stopUsingGPS();
 
                 switchSearch(KWS_SEARCH);
             }
