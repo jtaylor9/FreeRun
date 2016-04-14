@@ -9,11 +9,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 
 import android.app.Activity;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.speech.tts.TextToSpeech;
 import android.widget.TextView;
 import android.widget.Toast;
 import edu.cmu.pocketsphinx.Assets;
@@ -49,13 +51,14 @@ public class PocketSphinxActivity extends Activity implements
     String hh, mm, ss;
 
     ArrayList<String> lapTimes = new ArrayList<>();
-    int lapCounter = 1;
-    int index = 0;
+    int lapCounter = 1, nextMile = 1, index = 0;
     float finalDistance;
     long lapTime;
     long  timeElapsed;
     String finalTime;
     TextView textDistance;
+
+    TextToSpeech textToSpeech;
 
     GPSTracker gps;
 
@@ -72,8 +75,19 @@ public class PocketSphinxActivity extends Activity implements
                 .setText("Preparing the recognizer");
         textDistance = (TextView) findViewById(R.id.textDistance);
 
+        // Load Text to Speech
+        textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    textToSpeech.setLanguage(Locale.US);
+                }
+            }
+        });
+
+        //Check if location is on
         gps = new GPSTracker(PocketSphinxActivity.this);
-        if(!gps.canGetLocation()) {      //Checking if location is on
+        if(!gps.canGetLocation()) {
             gps.showSettingsAlert();
             gps.getLocation();
         }
@@ -81,6 +95,7 @@ public class PocketSphinxActivity extends Activity implements
         //Instantiate chronometer
         chron = (Chronometer) findViewById(R.id.chronometer);
 
+        //Calculate time
         chron.setOnChronometerTickListener(new OnChronometerTickListener() {
             @Override
             public void onChronometerTick(Chronometer chron) {
@@ -94,6 +109,11 @@ public class PocketSphinxActivity extends Activity implements
 
                 float miles = gps.getDistance()/(float)1609.34;  //Convert from meters to miles
                 textDistance.setText(String.format("%.2f miles", miles));  //Update text
+
+                if (miles > nextMile) {
+                    speech(Integer.toString(nextMile) + " mile");
+                    nextMile++;
+                }
             }
         });
 
@@ -130,6 +150,7 @@ public class PocketSphinxActivity extends Activity implements
         super.onDestroy();
         recognizer.cancel();
         recognizer.shutdown();
+        textToSpeech.shutdown();
     }
     
     /**
@@ -186,7 +207,8 @@ public class PocketSphinxActivity extends Activity implements
             makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
 
             if (text.equals(START_SEARCH)) {
-                lapTimes.clear();                                             //Reset the recorded laps
+                speech("started");
+                lapTimes.clear();                                 //Reset the recorded laps
                 ((TextView) findViewById(R.id.laptext)).setText("");
 
                 chron.setBase(SystemClock.elapsedRealtime());
@@ -198,6 +220,7 @@ public class PocketSphinxActivity extends Activity implements
             }
 
             if (text.equals(STOP_SEARCH)) {
+                speech("stopped");
                 chron.stop();
 
                 timeElapsed = SystemClock.elapsedRealtime() - chron.getBase();
@@ -205,7 +228,7 @@ public class PocketSphinxActivity extends Activity implements
                 int minutes = (int) (timeElapsed - hours * 3600000) / 60000;
                 int seconds = (int) (timeElapsed - hours * 3600000 - minutes * 60000) / 1000;
                 finalTime = "Total Time: [" + hours + " hrs:" + minutes + " mins:" + seconds + " secs]";
-                finalDistance = gps.getDistance();
+                finalDistance = gps.getDistance()/(float)1609.34;
                 chron.setText("");
                 lapCounter = 1;
                 index = 0;
@@ -216,6 +239,7 @@ public class PocketSphinxActivity extends Activity implements
             }
 
             if (text.equals(LAP_SEARCH)) {
+                speech("lap");
                 lapTime = SystemClock.elapsedRealtime() - chron.getBase();
                 int hours = (int) (lapTime / 3600000);
                 int minutes = (int) (lapTime - hours * 3600000) / 60000;
@@ -229,6 +253,7 @@ public class PocketSphinxActivity extends Activity implements
             }
 
             else if (text.equals(RESULTS_SEARCH)) {
+                speech("results");
                 String resultString = "";
                 chron.setText("");
                 ((TextView) findViewById(R.id.finalTime)).setText("in results");
@@ -286,7 +311,7 @@ public class PocketSphinxActivity extends Activity implements
                 //.setRawLogDir(assetsDir)
                 
                 // Threshold to tune for keyphrase to balance between false alarms and misses
-                .setKeywordThreshold(1e-30f)
+                .setKeywordThreshold(1e-20f)
                 
                 // Use context-independent phonetic search, context-dependent is too slow for mobile
                 .setBoolean("-allphone_ci", true)
@@ -305,6 +330,11 @@ public class PocketSphinxActivity extends Activity implements
         File menuGrammar = new File(assetsDir, "menu.gram");
         recognizer.addGrammarSearch(MENU_SEARCH, menuGrammar);
 
+    }
+
+    // Voices the string parameter "phrase"
+    private void speech(String phrase) {
+        textToSpeech.speak(phrase, TextToSpeech.QUEUE_FLUSH, null, null);
     }
 
     @Override
