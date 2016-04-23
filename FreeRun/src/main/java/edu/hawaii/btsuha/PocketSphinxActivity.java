@@ -311,7 +311,7 @@ public class PocketSphinxActivity extends Activity implements
                 //.setRawLogDir(assetsDir)
                 
                 // Threshold to tune for keyphrase to balance between false alarms and misses
-                .setKeywordThreshold(1e-20f)
+                .setKeywordThreshold(1e-30f)
                 
                 // Use context-independent phonetic search, context-dependent is too slow for mobile
                 .setBoolean("-allphone_ci", true)
